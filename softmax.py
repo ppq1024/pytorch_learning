@@ -46,7 +46,7 @@ def save(model_path):
 
 def load(model_path):
     model_data = np.load(model_path)
-    return torch.from_numpy(model_data['weight']).cuda(), torch.from_numpy(model_data['bias']).cuda()
+    return torch.from_numpy(model_data['weight']).to(device), torch.from_numpy(model_data['bias']).to(device)
 
 samples:DataBlock = data.load("data/train-data")
 labels:DataBlock = data.load("data/train-label")
