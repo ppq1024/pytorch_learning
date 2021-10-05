@@ -27,6 +27,19 @@
                 "-n",
                 "-m=softmax.model"
             ]
+        },
+        {
+            "name": "测试新的softmax模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-n",
+                "-m=softmax.test",
+                "destination=0.9"
+            ]
         }
     ]
 }

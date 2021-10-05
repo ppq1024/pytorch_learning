@@ -64,12 +64,13 @@ class SoftMax(model.Model):
         np.savez(model_path, **mats)
 
     def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
-        o = torch.ones(1, batch_size, dtype=torch.float32, device=device)
         iterator = data.iter(sample, label, batch_size)
         for s, l in iterator:
-            dy = (torch.matmul(s, this.w) + this.b - l) / batch_size
+            y = torch.matmul(s, this.w) + this.b
+            y_exp = y.exp()
+            dy: torch.Tensor = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
             this.w -= this.learning_rate * torch.matmul(s.T, dy)
-            this.b -= this.learning_rate * torch.matmul(o, dy)
+            this.b -= this.learning_rate * dy.sum(dim=0)
 
     def test(this, sample: DataBlock, label: DataBlock) -> float:
         right = 0
