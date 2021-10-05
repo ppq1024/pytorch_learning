@@ -40,7 +40,7 @@ path = lambda model_name: 'models/dnn/' + model_name + '.npz'
 class DNN(model.Model):
     def __init__(this, **args) -> None:
         args.setdefault('input_size', 784)
-        args.setdefault('layer_size', [128, 128, 10])
+        args.setdefault('layer_size', [512, 512, 256, 10])
         args.setdefault('learning_rate', 0.15)
         super().__init__(**args)
 
@@ -55,7 +55,7 @@ class DNN(model.Model):
             input_size = output_size
     
     def load(this, **args) -> None:
-        this.learning_count = args['learning_count']
+        this.learning_rate = args['learning_rate']
         this.__weights: list[torch.Tensor] = []
         this.__biases: list[torch.Tensor] = []
         model_path = path(args['model_name'])
@@ -64,9 +64,9 @@ class DNN(model.Model):
         sorted(files)
         for file in files:
             if (file.startswith('bias')):
-                this.__biases.append(model_data[file])
+                this.__biases.append(torch.from_numpy(model_data[file]).to(device))
             elif (file.startswith('weight')):
-                this.__weights.append(model_data[file])
+                this.__weights.append(torch.from_numpy(model_data[file]).to(device))
     
     def save(this, model_name: str) -> None:
         mats = {}
@@ -100,19 +100,11 @@ class DNN(model.Model):
                     # dy-1 = dx * sigmoid'(x)
                     dy = dx * x[i] * (1 - x[i])
     
-    def test(this, sample: DataBlock, label: DataBlock) -> float:
-        right = 0.0
-        total = 0.0
-        iterator = data.iter(sample, label, 1)
-        for s, l in iterator:
-            x = s
-            layer_count = len(this.__weights)
-            for i in range(layer_count):
-                y = torch.matmul(x, this.__weights[i]) + this.__biases[i]
-                if (i < layer_count - 1):
-                    x = torch.sigmoid(y)
-            
-            if (torch.argmax(y) == torch.argmax(l)):
-                right += 1
-            total += 1
-        return right / total
+    def out(this, sample: torch.Tensor) -> int:
+        x = sample
+        layer_count = len(this.__weights)
+        for i in range(layer_count):
+            y = torch.matmul(x, this.__weights[i]) + this.__biases[i]
+            if (i < layer_count - 1):
+                x = torch.sigmoid(y)
+        return torch.argmax(y)

@@ -73,14 +73,7 @@ class SoftMax(model.Model):
             dy: torch.Tensor = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
             this.__weight -= this.learning_rate * torch.matmul(s.T, dy)
             this.__bias -= this.learning_rate * dy.sum(dim=0)
-
-    def test(this, sample: DataBlock, label: DataBlock) -> float:
-        right = 0
-        total = 0
-        iterator = data.iter(sample, label, 1)
-        for s, l in iterator:
-            y = torch.matmul(s, this.__weight) + this.__bias
-            total += 1
-            if (torch.argmax(y) == torch.argmax(l)):
-                right += 1
-        return right / total
+    
+    def out(this, sample: torch.Tensor) -> int:
+        y = torch.matmul(sample, this.__weight) + this.__bias
+        return torch.argmax(y)

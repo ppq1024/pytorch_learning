@@ -17,6 +17,8 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
+import torch
+import data
 from data import DataBlock
 
 class Model:
@@ -39,4 +41,14 @@ class Model:
         pass
 
     def test(this, sample: DataBlock, label: DataBlock) -> float:
+        right = 0.0
+        total = 0.0
+        iterator = data.iter(sample, label, 1)
+        for s, l in iterator:
+            if (this.out(s) == torch.argmax(l)):
+                right += 1
+            total += 1
+        return right / total
+
+    def out(this, sample: torch.Tensor) -> int:
         pass
