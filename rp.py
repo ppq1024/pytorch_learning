@@ -19,6 +19,7 @@
 
 import torch
 import model
+import softmax
 import dnn
 import numpy as np
 import PIL.Image as pi
@@ -28,9 +29,11 @@ device = torch.device('cuda')
 host = torch.device('cpu')
 
 args = {}
+# args['model_type'] = 'softmax'
 args['model_type'] = 'dnn'
 args['model_name'] = 'model'
 args['new_model'] = 'false'
+# m: model.Model = softmax.getModel(**args)
 m: model.Model = dnn.getModel(**args)
 
 for i in range(10):

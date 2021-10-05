@@ -45,7 +45,7 @@ class Model:
         total = 0.0
         iterator = data.iter(sample, label, 1)
         for s, l in iterator:
-            if (this.out(s) == torch.argmax(l)):
+            if (this.out(s) == torch.argmax(l).item()):
                 right += 1
             total += 1
         return right / total

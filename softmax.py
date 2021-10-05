@@ -42,25 +42,25 @@ class SoftMax(model.Model):
         args.setdefault('input_size', 784)
         args.setdefault('output_size', 10)
         args.setdefault('learning_rate', 0.03)
-        super().__init__(this, **args)
+        super().__init__(**args)
 
     def init(this, **args) -> None:
         this.learning_rate = args['learning_rate']
-        this.__weight = torch.randn(args['input_size'], args['output_size'], dtype=torch.float32, device=device)
-        this.__bias = torch.zeros(1, args['output_size'], dtype=torch.float32, device=device)
+        this.__weight = torch.randn(args['input_size'], args['output_size'], dtype=torch.float32, device=device, requires_grad=True)
+        this.__bias = torch.zeros(1, args['output_size'], dtype=torch.float32, device=device, requires_grad=True)
     
     def load(this, **args) -> None:
         this.learning_rate = args['learning_rate']
         model_path = path(args['model_name'])
         model_data = np.load(model_path)
-        this.__weight = torch.from_numpy(model_data['weight']).to(device)
-        this.__bias = torch.from_numpy(model_data['bias']).to(device)
+        this.__weight = torch.from_numpy(model_data['weight']).to(device).requires_grad_(True)
+        this.__bias = torch.from_numpy(model_data['bias']).to(device).requires_grad_(True)
     
     def save(this, model_name: str) -> None:
         model_path = path(model_name)
         mats = {}
-        mats['weight'] = this.__weight.to(host).numpy()
-        mats['bias'] = this.__bias.to(host).numpy()
+        mats['weight'] = this.__weight.data.to(host).numpy()
+        mats['bias'] = this.__bias.data.to(host).numpy()
         if (not os.path.exists('models/softmax')):
             os.makedirs('models/softmax')
         np.savez(model_path, **mats)
@@ -70,10 +70,21 @@ class SoftMax(model.Model):
         for s, l in iterator:
             y = torch.matmul(s, this.__weight) + this.__bias
             y_exp = y.exp()
-            dy: torch.Tensor = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
-            this.__weight -= this.learning_rate * torch.matmul(s.T, dy)
-            this.__bias -= this.learning_rate * dy.sum(dim=0)
+
+            # dy: torch.Tensor = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
+            # this.__weight -= this.learning_rate * torch.matmul(s.T, dy)
+            # this.__bias -= this.learning_rate * dy.sum(dim=0)
+
+            loss = (torch.log(y_exp.sum(dim=1, keepdim=True)) - y) * l
+            loss.sum().backward()
+            this.__weight.data -= this.learning_rate * this.__weight.grad / batch_size
+            this.__bias.data -= this.learning_rate * this.__bias.grad / batch_size
+            this.__weight.grad.zero_()
+            this.__bias.grad.zero_()
+
+
     
     def out(this, sample: torch.Tensor) -> int:
-        y = torch.matmul(sample, this.__weight) + this.__bias
-        return torch.argmax(y)
+        with torch.no_grad():
+            y = torch.matmul(sample, this.__weight) + this.__bias
+            return torch.argmax(y).item()

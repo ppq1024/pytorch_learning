@@ -50,8 +50,8 @@ class DNN(model.Model):
         this.__biases: list[torch.Tensor] = []
         input_size = args['input_size']
         for output_size in args['layer_size']:
-            this.__weights.append(torch.randn(input_size, output_size, dtype=torch.float32, device=device))
-            this.__biases.append(torch.zeros(1, output_size, dtype=torch.float32, device=device))
+            this.__weights.append(torch.randn(input_size, output_size, dtype=torch.float32, device=device, requires_grad=True))
+            this.__biases.append(torch.zeros(1, output_size, dtype=torch.float32, device=device, requires_grad=True))
             input_size = output_size
     
     def load(this, **args) -> None:
@@ -64,16 +64,16 @@ class DNN(model.Model):
         sorted(files)
         for file in files:
             if (file.startswith('bias')):
-                this.__biases.append(torch.from_numpy(model_data[file]).to(device))
+                this.__biases.append(torch.from_numpy(model_data[file]).to(device).requires_grad_(True))
             elif (file.startswith('weight')):
-                this.__weights.append(torch.from_numpy(model_data[file]).to(device))
+                this.__weights.append(torch.from_numpy(model_data[file]).to(device).requires_grad_(True))
     
     def save(this, model_name: str) -> None:
         mats = {}
         for i in range(len(this.__weights)):
-            mats['weight_' + str(i)] = this.__weights[i].to(host).numpy()
+            mats['weight_' + str(i)] = this.__weights[i].data.to(host).numpy()
         for i in range(len(this.__biases)):
-            mats['bias_' + str(i)] = this.__biases[i].to(host).numpy()
+            mats['bias_' + str(i)] = this.__biases[i].data.to(host).numpy()
         if (not os.path.exists('models/dnn')):
             os.makedirs('models/dnn')
         np.savez(path(model_name), **mats)
@@ -81,30 +81,46 @@ class DNN(model.Model):
     def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
         iterator = data.iter(sample, label, batch_size)
         for s, l in iterator:
-            x: list[torch.Tensor] = []
-            y: list[torch.Tensor] = []
-            x.append(s)
+            # x: list[torch.Tensor] = []
+            # y: list[torch.Tensor] = []
+            # x.append(s)
+            # layer_count = len(this.__weights)
+            # for i in range(layer_count):
+            #     y.append(torch.matmul(x[i], this.__weights[i]) + this.__biases[i])
+            #     if (i < layer_count - 1):
+            #         x.append(torch.sigmoid(y[i]))
+            
+            # y_exp = y[layer_count - 1].exp()
+            # dy = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
+            # for i in range(layer_count - 1, -1, -1):
+            #     dx = torch.matmul(dy, this.__weights[i].T)
+            #     this.__weights[i] -= this.learning_rate * torch.matmul(x[i].T, dy)
+            #     this.__biases[i] -= this.learning_rate * dy.sum(dim=0)
+            #     if (i > 0):
+            #         # dy-1 = dx * sigmoid'(x)
+            #         dy = dx * x[i] * (1 - x[i])
+
+            x = s
             layer_count = len(this.__weights)
             for i in range(layer_count):
-                y.append(torch.matmul(x[i], this.__weights[i]) + this.__biases[i])
+                y = torch.matmul(x, this.__weights[i]) + this.__biases[i]
                 if (i < layer_count - 1):
-                    x.append(torch.sigmoid(y[i]))
-            
-            y_exp = y[layer_count - 1].exp()
-            dy = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
-            for i in range(layer_count - 1, -1, -1):
-                dx = torch.matmul(dy, this.__weights[i].T)
-                this.__weights[i] -= this.learning_rate * torch.matmul(x[i].T, dy)
-                this.__biases[i] -= this.learning_rate * dy.sum(dim=0)
-                if (i > 0):
-                    # dy-1 = dx * sigmoid'(x)
-                    dy = dx * x[i] * (1 - x[i])
+                    x = torch.sigmoid(y)
+            y_exp = y.exp()
+            loss = (torch.log(y_exp.sum(dim=1, keepdim=True)) - y) * l
+            loss.sum().backward()
+            for i in range(layer_count):
+                this.__weights[i].data -= this.learning_rate * this.__weights[i].grad / batch_size
+                this.__biases[i].data -= this.learning_rate * this.__biases[i].grad / batch_size
+                this.__weights[i].grad.zero_()
+                this.__biases[i].grad.zero_()
     
     def out(this, sample: torch.Tensor) -> int:
-        x = sample
-        layer_count = len(this.__weights)
-        for i in range(layer_count):
-            y = torch.matmul(x, this.__weights[i]) + this.__biases[i]
-            if (i < layer_count - 1):
-                x = torch.sigmoid(y)
-        return torch.argmax(y)
+        with torch.no_grad():
+            x = sample
+            layer_count = len(this.__weights)
+            for i in range(layer_count):
+                y = torch.matmul(x, this.__weights[i]) + this.__biases[i]
+                if (i < layer_count - 1):
+                    x = torch.sigmoid(y)
+            return torch.argmax(y).item()
