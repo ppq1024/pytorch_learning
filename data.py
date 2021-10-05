@@ -17,10 +17,8 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from enum import Enum
-from typing import Iterable, Iterator
 import torch
-import numpy as np
+from enum import Enum
 
 device = torch.device('cuda')
 host = torch.device('cpu')

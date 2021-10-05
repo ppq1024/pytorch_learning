@@ -17,8 +17,7 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from typing import Iterator, Tuple
-import torch
+from data import DataBlock
 
 class Model:
     def __init__(this, **args) -> None:
@@ -33,11 +32,11 @@ class Model:
     def load(this, **args) -> None:
         pass
 
-    def save(this, model_path:str) -> None:
+    def save(this, model_name:str) -> None:
         pass
 
-    def train(this, training_set:Iterator[Tuple[torch.Tensor, torch.Tensor]]) -> None:
+    def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
         pass
 
-    def test(this, testing_set:Iterator[Tuple[torch.Tensor, torch.Tensor]]) -> float:
+    def test(this, sample: DataBlock, label: DataBlock) -> float:
         pass

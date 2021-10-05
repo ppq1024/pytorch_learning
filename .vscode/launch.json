@@ -40,6 +40,19 @@
                 "-m=softmax.test",
                 "destination=0.9"
             ]
+        },
+        {
+            "name": "测试新的dnn模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-n",
+                "-m=dnn.test",
+                "destination=0.8"
+            ]
         }
     ]
 }

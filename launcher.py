@@ -18,6 +18,7 @@
 '''
 
 import data
+import dnn
 import softmax
 
 from typing import Dict
@@ -28,6 +29,7 @@ entance = {}
 
 def init():
     entance['softmax'] = softmax.getModel
+    entance['dnn'] = dnn.getModel
 
 def launch(args:Dict[str, str]) -> None:
     init()

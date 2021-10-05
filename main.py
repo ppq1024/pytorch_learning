@@ -16,6 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
+
 import sys
 import argument
 import launcher

@@ -17,13 +17,13 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from typing import Iterator, Tuple
+import os
 import torch
-import torchvision
 import numpy as np
 import data
-from data import DataBlock
 import model
+
+from data import DataBlock
 
 #类似CUDA里区分CPU合GPU的方式
 device = torch.device('cuda')
@@ -42,42 +42,44 @@ class SoftMax(model.Model):
         args.setdefault('input_size', 784)
         args.setdefault('output_size', 10)
         args.setdefault('learning_rate', 0.03)
-        model.Model.__init__(this, **args)
+        super().__init__(this, **args)
 
     def init(this, **args) -> None:
         this.learning_rate = args['learning_rate']
-        this.w = torch.randn(args['input_size'], args['output_size'], dtype=torch.float32, device=device)
-        this.b = torch.zeros(1, args['output_size'], dtype=torch.float32, device=device)
+        this.__weight = torch.randn(args['input_size'], args['output_size'], dtype=torch.float32, device=device)
+        this.__bias = torch.zeros(1, args['output_size'], dtype=torch.float32, device=device)
     
     def load(this, **args) -> None:
         this.learning_rate = args['learning_rate']
         model_path = path(args['model_name'])
         model_data = np.load(model_path)
-        this.w = torch.from_numpy(model_data['weight']).to(device)
-        this.b = torch.from_numpy(model_data['bias']).to(device)
+        this.__weight = torch.from_numpy(model_data['weight']).to(device)
+        this.__bias = torch.from_numpy(model_data['bias']).to(device)
     
     def save(this, model_name: str) -> None:
         model_path = path(model_name)
         mats = {}
-        mats['weight'] = this.w.to(host).numpy()
-        mats['bias'] = this.b.to(host).numpy()
+        mats['weight'] = this.__weight.to(host).numpy()
+        mats['bias'] = this.__bias.to(host).numpy()
+        if (not os.path.exists('models/softmax')):
+            os.makedirs('models/softmax')
         np.savez(model_path, **mats)
 
     def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
         iterator = data.iter(sample, label, batch_size)
         for s, l in iterator:
-            y = torch.matmul(s, this.w) + this.b
+            y = torch.matmul(s, this.__weight) + this.__bias
             y_exp = y.exp()
             dy: torch.Tensor = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
-            this.w -= this.learning_rate * torch.matmul(s.T, dy)
-            this.b -= this.learning_rate * dy.sum(dim=0)
+            this.__weight -= this.learning_rate * torch.matmul(s.T, dy)
+            this.__bias -= this.learning_rate * dy.sum(dim=0)
 
     def test(this, sample: DataBlock, label: DataBlock) -> float:
         right = 0
         total = 0
         iterator = data.iter(sample, label, 1)
         for s, l in iterator:
-            y = torch.matmul(s, this.w) + this.b
+            y = torch.matmul(s, this.__weight) + this.__bias
             total += 1
             if (torch.argmax(y) == torch.argmax(l)):
                 right += 1
