@@ -17,10 +17,11 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from enum import Enum
-from typing import Iterable, Iterator
 import torch
-import numpy as np
+from enum import Enum
+
+device = torch.device('cuda')
+host = torch.device('cpu')
 
 class DataType(Enum):
     undefined = 0
@@ -28,9 +29,9 @@ class DataType(Enum):
     label = 2
 
 class DataBlock:
-    def __init__(this, data, data_type:DataType, element_length:int, size:int) -> None:
+    def __init__(this, data:torch.Tensor, data_type:DataType) -> None:
         this.data_type = data_type
-        this.data:torch.Tensor = torch.tensor(data, dtype=torch.float32, device='cuda').view(size, element_length)
+        this.data = data
 
 def load(name):
     file = open(name, 'rb', 64 * 1024)
@@ -43,7 +44,6 @@ def load(name):
         data_type = DataType.sample
     
     assert data_type != DataType.undefined
-    data = []
     element_length = 10
     if (data_type == DataType.sample):
         w = int.from_bytes(file.read(4), 'big')
@@ -51,23 +51,15 @@ def load(name):
         element_length = w * h
         raw_data = file.read(element_length * size)
         file.close()
-        for i in range(size):
-            element = []
-            for j in range(element_length):
-                element.append(raw_data[i * element_length + j] / 255.0)
-            data.append(element)
+        data = torch.tensor(list(raw_data), dtype=torch.float32, device=device).view(size, element_length)
+        data /= 255.0
     elif (data_type == DataType.label):
         raw_data = file.read(size)
         file.close()
+        data = torch.zeros(size, 10, dtype=torch.float32, device=device)
         for i in range(size):
-            element = []
-            for j in range(10):
-                if (j == raw_data[i]):
-                    element.append(1.0)
-                else:
-                    element.append(0.0)
-            data.append(element)
-    return DataBlock(data, data_type, element_length, size)
+            data[i][raw_data[i]] = 1.0
+    return DataBlock(data, data_type)
 
 def iter(sample:DataBlock, label:DataBlock, batch_size:int = -1):
     assert sample.data_type == DataType.sample and label.data_type == DataType.label \
@@ -77,6 +69,6 @@ def iter(sample:DataBlock, label:DataBlock, batch_size:int = -1):
     if (batch_size <= 0):
         batch_size = size
     for i in range(0, size, batch_size):
-        yield torch.tensor(sample.data[i : min(i + batch_size, size)]), torch.tensor(label.data[i : min(i + batch_size, size)])
+        yield sample.data[i : min(i + batch_size, size)], label.data[i : min(i + batch_size, size)]
 
 

@@ -17,68 +17,70 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
+import os
 import torch
-import torchvision
 import numpy as np
 import data
+import model
 
 from data import DataBlock
 
+#类似CUDA里区分CPU合GPU的方式
 device = torch.device('cuda')
 host = torch.device('cpu')
 
-def test(sample:DataBlock, label:DataBlock) -> float:
-    right = 0
-    total = 0
-    iterator = data.iter(sample, label, 1)
-    for s, l in iterator:
-        y = torch.matmul(s, w) + b
-        total += 1
-        if (torch.argmax(y) == torch.argmax(l)):
-            right += 1
-    return right / total
+def getModel(**args) -> model.Model:
+    assert args['model_type'] == 'softmax'
+    if (args['new_model'] == 'true'):
+        args['model_name'] = ''
+    return SoftMax(**args)
 
-def save(model_path):
-    mats = {}
-    mats['weight'] = w.to(host).numpy()
-    mats['bias'] = b.to(host).numpy()
-    np.savez(model_path, **mats)
+path = lambda model_name: 'models/softmax/' + model_name + '.npz'
 
-def load(model_path):
-    model_data = np.load(model_path)
-    return torch.from_numpy(model_data['weight']).cuda(), torch.from_numpy(model_data['bias']).cuda()
+class SoftMax(model.Model):
+    def __init__(this, **args) -> None:
+        args.setdefault('input_size', 784)
+        args.setdefault('output_size', 10)
+        args.setdefault('learning_rate', 0.03)
+        super().__init__(this, **args)
 
-samples:DataBlock = data.load("data/train-data")
-labels:DataBlock = data.load("data/train-label")
-samples_test:DataBlock = data.load("data/test-data")
-labels_test:DataBlock = data.load("data/test-label")
+    def init(this, **args) -> None:
+        this.learning_rate = args['learning_rate']
+        this.__weight = torch.randn(args['input_size'], args['output_size'], dtype=torch.float32, device=device)
+        this.__bias = torch.zeros(1, args['output_size'], dtype=torch.float32, device=device)
+    
+    def load(this, **args) -> None:
+        this.learning_rate = args['learning_rate']
+        model_path = path(args['model_name'])
+        model_data = np.load(model_path)
+        this.__weight = torch.from_numpy(model_data['weight']).to(device)
+        this.__bias = torch.from_numpy(model_data['bias']).to(device)
+    
+    def save(this, model_name: str) -> None:
+        model_path = path(model_name)
+        mats = {}
+        mats['weight'] = this.__weight.to(host).numpy()
+        mats['bias'] = this.__bias.to(host).numpy()
+        if (not os.path.exists('models/softmax')):
+            os.makedirs('models/softmax')
+        np.savez(model_path, **mats)
 
-input_size = 784
-output_size = 10
-batch_size = 16
-learning_rate = 0.03
+    def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
+        iterator = data.iter(sample, label, batch_size)
+        for s, l in iterator:
+            y = torch.matmul(s, this.__weight) + this.__bias
+            y_exp = y.exp()
+            dy: torch.Tensor = (y_exp / y_exp.sum(dim=1, keepdim=True) - l) / batch_size
+            this.__weight -= this.learning_rate * torch.matmul(s.T, dy)
+            this.__bias -= this.learning_rate * dy.sum(dim=0)
 
-init = False
-if (init):
-    w = torch.randn(input_size, output_size, dtype=torch.float32, device=device)
-    b = torch.randn(1, output_size, dtype=torch.float32, device=device)
-else:
-    w, b = load('models/softmax/model.npz')
-
-correct_rate = test(samples_test, labels_test)
-print('initial correct rate:' + str(correct_rate))
-
-o = torch.ones(1, batch_size, dtype=torch.float32, device=device)
-
-while (correct_rate < 0.8):
-    print('new loop')
-    iterator = data.iter(samples, labels, batch_size)
-    for s, l in iterator:
-        dy = (torch.matmul(s, w) + b - l) / batch_size
-        w -= learning_rate * torch.matmul(s.T, dy)
-        b -= learning_rate * torch.matmul(o, dy)
-    correct_rate = test(samples_test, labels_test)
-    print('correct rate:' + str(correct_rate))
-    save('models/softmax/model.npz')
-
-save('models/softmax/model.npz')
+    def test(this, sample: DataBlock, label: DataBlock) -> float:
+        right = 0
+        total = 0
+        iterator = data.iter(sample, label, 1)
+        for s, l in iterator:
+            y = torch.matmul(s, this.__weight) + this.__bias
+            total += 1
+            if (torch.argmax(y) == torch.argmax(l)):
+                right += 1
+        return right / total

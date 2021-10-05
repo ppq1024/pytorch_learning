@@ -1,0 +1,58 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "训练已有的softmax模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-m=softmax.model",
+                "destination=0.8"
+            ]
+        },
+        {
+            "name": "训练新的softmax模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-n",
+                "-m=softmax.model"
+            ]
+        },
+        {
+            "name": "测试新的softmax模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-n",
+                "-m=softmax.test",
+                "destination=0.9"
+            ]
+        },
+        {
+            "name": "测试新的dnn模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-n",
+                "-m=dnn.test",
+                "destination=0.8"
+            ]
+        }
+    ]
+}
