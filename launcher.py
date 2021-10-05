@@ -46,4 +46,5 @@ def launch(args:Dict[str, str]) -> None:
         m.train(samples, labels)
         correct_rate = m.test(samples_test, labels_test)
         print('correct rate:' + str(correct_rate))
+        m.save(args['model_name'])
     m.save(args['model_name'])

@@ -62,7 +62,8 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "-n",
-                "-m=dnn.model"
+                "-m=dnn.model",
+                "destination=0.92"
             ]
         },
         {
