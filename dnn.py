@@ -55,7 +55,7 @@ class DNN(model.Model):
             input_size = output_size
     
     def load(this, **args) -> None:
-        this.learning_count = args['learning_count']
+        this.learning_rate = args['learning_rate']
         this.__weights: list[torch.Tensor] = []
         this.__biases: list[torch.Tensor] = []
         model_path = path(args['model_name'])
@@ -64,9 +64,9 @@ class DNN(model.Model):
         sorted(files)
         for file in files:
             if (file.startswith('bias')):
-                this.__biases.append(model_data[file])
+                this.__biases.append(torch.from_numpy(model_data[file]).to(device))
             elif (file.startswith('weight')):
-                this.__weights.append(model_data[file])
+                this.__weights.append(torch.from_numpy(model_data[file]).to(device))
     
     def save(this, model_name: str) -> None:
         mats = {}
