@@ -35,7 +35,7 @@ def getModel(**args) -> model.Model:
         args['model_name'] = ''
     return SoftMax(**args)
 
-path = lambda model_name: 'models/softmax/' + model_name + '.npz'
+path = lambda model_name: 'models/softmax/' + model_name + '.pt'
 
 class SoftMax(model.Model):
     def __init__(this, **args) -> None:
@@ -51,19 +51,14 @@ class SoftMax(model.Model):
     
     def load(this, **args) -> None:
         this.learning_rate = args['learning_rate']
-        model_path = path(args['model_name'])
-        model_data = np.load(model_path)
-        this.__weight = torch.from_numpy(model_data['weight']).to(device).requires_grad_(True)
-        this.__bias = torch.from_numpy(model_data['bias']).to(device).requires_grad_(True)
+        model_data = torch.load(path(args['model_name']), map_location=device)
+        this.__weight: torch.Tensor = model_data['weight']
+        this.__bias: torch.Tensor = model_data['bias']
     
     def save(this, model_name: str) -> None:
-        model_path = path(model_name)
-        mats = {}
-        mats['weight'] = this.__weight.data.to(host).numpy()
-        mats['bias'] = this.__bias.data.to(host).numpy()
         if (not os.path.exists('models/softmax')):
             os.makedirs('models/softmax')
-        np.savez(model_path, **mats)
+        torch.save({'weight': this.__weight, 'bias': this.__bias}, path(model_name))
 
     def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
         iterator = data.iter(sample, label, batch_size)

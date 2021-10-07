@@ -35,7 +35,7 @@ def getModel(**args) -> model.Model:
         args['model_name'] = ''
     return DNN(**args)
 
-path = lambda model_name: 'models/dnn/' + model_name + '.npz'
+path = lambda model_name: 'models/dnn/' + model_name + '.pt'
 
 class DNN(model.Model):
     def __init__(this, **args) -> None:
@@ -56,27 +56,14 @@ class DNN(model.Model):
     
     def load(this, **args) -> None:
         this.learning_rate = args['learning_rate']
-        this.__weights: list[torch.Tensor] = []
-        this.__biases: list[torch.Tensor] = []
-        model_path = path(args['model_name'])
-        model_data = np.load(model_path)
-        files:list[str] = model_data.files
-        sorted(files)
-        for file in files:
-            if (file.startswith('bias')):
-                this.__biases.append(torch.from_numpy(model_data[file]).to(device).requires_grad_(True))
-            elif (file.startswith('weight')):
-                this.__weights.append(torch.from_numpy(model_data[file]).to(device).requires_grad_(True))
+        model_data = torch.load(path(args['model_name']))
+        this.__weights: list[torch.Tensor] = model_data['weights']
+        this.__biases: list[torch.Tensor] = model_data['biases']
     
     def save(this, model_name: str) -> None:
-        mats = {}
-        for i in range(len(this.__weights)):
-            mats['weight_' + str(i)] = this.__weights[i].data.to(host).numpy()
-        for i in range(len(this.__biases)):
-            mats['bias_' + str(i)] = this.__biases[i].data.to(host).numpy()
         if (not os.path.exists('models/dnn')):
             os.makedirs('models/dnn')
-        np.savez(path(model_name), **mats)
+        torch.save({'weights': this.__weights, 'biases': this.__biases}, path(model_name))
 
     def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
         iterator = data.iter(sample, label, batch_size)
