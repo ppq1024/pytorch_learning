@@ -44,14 +44,12 @@ def load(name):
         data_type = DataType.sample
     
     assert data_type != DataType.undefined
-    element_length = 10
     if (data_type == DataType.sample):
         w = int.from_bytes(file.read(4), 'big')
         h = int.from_bytes(file.read(4), 'big')
-        element_length = w * h
-        raw_data = file.read(element_length * size)
+        raw_data = file.read(w * h * size)
         file.close()
-        data = torch.tensor(list(raw_data), dtype=torch.float32, device=device).view(size, element_length)
+        data = torch.tensor(list(raw_data), dtype=torch.float32, device=device).view(size, 1, w, h)
         data /= 255.0
     elif (data_type == DataType.label):
         raw_data = file.read(size)

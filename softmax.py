@@ -20,17 +20,15 @@
 
 import torch
 import util
+import model
 
-from model import Model
-from torch.nn import Linear
-
-def getModel(**args) -> Model:
+def getModel(**args) -> model.Model:
     assert args['model_type'] == 'softmax'
     if (args['new_model'] == 'true'):
         args['model_name'] = ''
     return SoftMax(**args)
 
-class SoftMax(Model):
+class SoftMax(model.Model):
     model_type = 'softmax'
 
     def __init__(this, **args) -> None:
@@ -40,4 +38,6 @@ class SoftMax(Model):
         super().__init__(**args)  
 
     def init(this, **args) -> None:
-        this._model = Linear(args['input_size'], args['output_size'], device=util.active)
+        this._model = torch.nn.Sequential(model.Flatten(),
+            torch.nn.Linear(args['input_size'], args['output_size'], device=util.active)
+        )

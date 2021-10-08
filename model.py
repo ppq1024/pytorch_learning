@@ -74,10 +74,11 @@ class Model:
             return torch.argmax(y).item()
 
 class CrossEntropyLoss(torch.nn.Module):
-    def __init__(this):
-        super().__init__()
-
     def forward(this, y: torch.Tensor, l: torch.Tensor) -> torch.Tensor:
         y_exp = y.exp()
         loss = (torch.log(y_exp.sum(dim=1, keepdim=True)) - y) * l
         return loss
+
+class Flatten(torch.nn.Module):
+    def forward(this, input: torch.Tensor) -> torch.Tensor:
+        return input.view(input.shape[0], -1)

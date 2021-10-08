@@ -19,24 +19,20 @@
 
 import torch
 import model
-import softmax
-import dnn
 import numpy as np
 import PIL.Image as pi
+import launcher
+import util
 
-#类似CUDA里区分CPU合GPU的方式
-device = torch.device('cuda')
-host = torch.device('cpu')
+launcher.init()
 
 args = {}
-# args['model_type'] = 'softmax'
-args['model_type'] = 'dnn'
+args['model_type'] = 'cnn'
 args['model_name'] = 'model'
 args['new_model'] = 'false'
-# m: model.Model = softmax.getModel(**args)
-m: model.Model = dnn.getModel(**args)
+m: model.Model = launcher.entance[args['model_type']](**args)
 
 for i in range(10):
     image = pi.open('data/pictures/' + str(i) + '.png').convert('L').convert('F')
-    sample = torch.from_numpy(np.mat(image)).to(device).view(1, 784)
+    sample = torch.from_numpy(np.mat(image)).to(util.active).view(1, 1, 28, 28)
     print(m.out(sample / 255.0))

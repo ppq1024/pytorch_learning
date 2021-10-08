@@ -18,29 +18,33 @@
 '''
 
 import torch
-import util
 import model
+import util
 
 def getModel(**args) -> model.Model:
-    assert args['model_type'] == 'dnn'
+    assert args['model_type'] == 'cnn'
     if (args['new_model'] == 'true'):
         args['model_name'] = ''
-    return DNN(**args)
+    return CNN(**args)
 
-class DNN(model.Model):
-    model_type = 'dnn'
+class CNN(model.Model):
+    model_type = 'cnn'
 
     def __init__(this, **args) -> None:
-        args.setdefault('input_size', 784)
-        args.setdefault('layer_size', [512, 512, 256, 10])
-        args.setdefault('learning_rate', 0.2)
+        args.setdefault('learning_rate', 0.03)
         super().__init__(**args)
 
     def init(this, **args) -> None:
-        models = [model.Flatten()]
-        input_size = args['input_size']
-        for output_size in args['layer_size']:
-            models.append(torch.nn.Linear(input_size, output_size, device=util.active))
-            models.append(torch.nn.Sigmoid())
-            input_size = output_size
-        this._model = torch.nn.Sequential(*models)
+        # 那么多参数懒得弄了
+        this._model = torch.nn.Sequential(
+            torch.nn.Conv2d(1, 6, 5, device=util.active),
+            torch.nn.Sigmoid(),
+            torch.nn.AvgPool2d(2, 2),
+            torch.nn.Conv2d(6, 16, 5, device=util.active),
+            torch.nn.Sigmoid(),
+            torch.nn.AvgPool2d(2, 2),
+            model.Flatten(),
+            torch.nn.Linear(256, 256, device=util.active),
+            torch.nn.Sigmoid(),
+            torch.nn.Linear(256, 10, device=util.active)
+        )

@@ -20,6 +20,7 @@
 import data
 import dnn
 import softmax
+import cnn
 
 from typing import Dict
 from data import DataBlock
@@ -30,6 +31,7 @@ entance = {}
 def init():
     entance['softmax'] = softmax.getModel
     entance['dnn'] = dnn.getModel
+    entance['cnn'] = cnn.getModel
 
 def launch(args:Dict[str, str]) -> None:
     init()
