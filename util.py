@@ -17,27 +17,11 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-
 import torch
-import util
 
-from model import Model
-from torch.nn import Linear
+#类似CUDA里区分CPU合GPU的方式
+device = torch.device('cuda')
+host = torch.device('cpu')
+active = device if (torch.cuda.is_available()) else host
 
-def getModel(**args) -> Model:
-    assert args['model_type'] == 'softmax'
-    if (args['new_model'] == 'true'):
-        args['model_name'] = ''
-    return SoftMax(**args)
-
-class SoftMax(Model):
-    model_type = 'softmax'
-
-    def __init__(this, **args) -> None:
-        args.setdefault('input_size', 784)
-        args.setdefault('output_size', 10)
-        args.setdefault('learning_rate', 0.03)
-        super().__init__(**args)  
-
-    def init(this, **args) -> None:
-        this._model = Linear(args['input_size'], args['output_size'], device=util.active)
+path = lambda model_type, model_name : 'models/' + model_type + '/' + model_name + '.pt'

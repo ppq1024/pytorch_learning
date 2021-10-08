@@ -17,28 +17,46 @@
     along with pl.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
+import os
 import torch
 import data
+import util
+
 from data import DataBlock
 
 class Model:
+    model_type = ''
+
     def __init__(this, **args) -> None:
         if (args['model_name'] == ''):
             this.init(**args)
+            for param in this._model.parameters():
+                torch.nn.init.normal_(param)
         else:
             this.load(**args)
+        this.__loss = CrossEntropyLoss()
+        this.__optimizer = torch.optim.SGD(this._model.parameters(), args['learning_rate'])
 
     def init(this, **args) -> None:
         pass
 
     def load(this, **args) -> None:
-        pass
+        this._model: torch.nn.Module = torch.load(util.path(args['model_type'], args['model_name']), map_location=util.active)
 
     def save(this, model_name:str) -> None:
-        pass
+        if (not os.path.exists('models/' + this.model_type)):
+            os.makedirs('models/' + this.model_type)
+        torch.save(this._model, util.path(this.model_type, model_name))
 
     def train(this, sample: DataBlock, label: DataBlock, batch_size = 32) -> None:
-        pass
+        iterator = data.iter(sample, label, batch_size)
+        for s, l in iterator:
+            y = this._model(s)
+            loss: torch.Tensor = this.__loss(y, l)
+            loss = loss.sum()
+            this.__optimizer.zero_grad()
+            loss.backward()
+            this.__optimizer.step()
 
     def test(this, sample: DataBlock, label: DataBlock) -> float:
         right = 0.0
@@ -51,4 +69,15 @@ class Model:
         return right / total
 
     def out(this, sample: torch.Tensor) -> int:
-        pass
+        with torch.no_grad():
+            y = this._model(sample)
+            return torch.argmax(y).item()
+
+class CrossEntropyLoss(torch.nn.Module):
+    def __init__(this):
+        super().__init__()
+
+    def forward(this, y: torch.Tensor, l: torch.Tensor) -> torch.Tensor:
+        y_exp = y.exp()
+        loss = (torch.log(y_exp.sum(dim=1, keepdim=True)) - y) * l
+        return loss
