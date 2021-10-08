@@ -18,21 +18,10 @@
 '''
 
 import torch
-import model
-import numpy as np
-import PIL.Image as pi
-import launcher
-import util
 
-launcher.init()
+#类似CUDA里区分CPU合GPU的方式
+device = torch.device('cuda')
+host = torch.device('cpu')
+active = device if (torch.cuda.is_available()) else host
 
-args = {}
-args['model_type'] = 'cnn'
-args['model_name'] = 'model'
-args['new_model'] = 'false'
-m: model.Model = launcher.entance[args['model_type']](**args)
-
-for i in range(10):
-    image = pi.open('data/pictures/' + str(i) + '.png').convert('L').convert('F')
-    sample = torch.from_numpy(np.mat(image)).to(util.active).view(1, 1, 28, 28)
-    print(m.out(sample / 255.0))
+path = lambda model_type, model_name : 'models/' + model_type + '/' + model_name + '.pt'

@@ -50,7 +50,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "-m=dnn.model",
-                "destination=0.95"
+                "destination=0.9"
             ]
         },
         {
@@ -62,8 +62,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "-n",
-                "-m=dnn.model",
-                "destination=0.92"
+                "-m=dnn.model"
             ]
         },
         {
@@ -76,6 +75,43 @@
             "args": [
                 "-n",
                 "-m=dnn.test",
+                "destination=0.8"
+            ]
+        },
+        {
+            "name": "训练已有的cnn模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-m=cnn.model",
+                "destination=0.97"
+            ]
+        },
+        {
+            "name": "训练新的cnn模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-n",
+                "-m=cnn.model"
+            ]
+        },
+        {
+            "name": "测试新的cnn模型",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-n",
+                "-m=cnn.test",
                 "destination=0.8"
             ]
         }
